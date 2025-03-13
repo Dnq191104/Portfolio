@@ -2,7 +2,7 @@ The Portfolio folder contains 3 main projects:
 1. Data Visualization
 2. Regression Design
 3. TOWS Analysis
-4. SMC_ABC_laten_count_model
+4. SMC_ABC_latent_count_model
 
 
 Data Visualization has 2 projects:
