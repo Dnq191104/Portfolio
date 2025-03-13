@@ -1,7 +1,7 @@
 The Portfolio folder contains 3 main projects: 
-1. Data Visualization\n
-2. Regression Design\n
-3. TOWS Analysis\n
+1. Data Visualization
+2. Regression Design
+3. TOWS Analysis
 
 
 Data Visualization has 2 projects:
