@@ -1,0 +1,1023 @@
+---
+title: | 
+  | \vspace{4cm} \LARGE Optimising Projectile Range: 
+  | \vspace{1cm} \LARGE Is weight or swing-arm length more effective?
+author:
+- "Stephen Dang - N11530189, Kyle Ruter - N9439960" 
+- "Chase Tolputt - N10325484, Lucas Flynn - N11319801"
+date: "28th May 2024"
+output: 
+   pdf_document:
+      toc: TRUE
+      toc_depth: 2
+numbersections: TRUE
+urlcolor: blue
+fontsize: 11pt
+geometry: margin=2.5cm
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{sectsty} \allsectionsfont{\centering}
+include-before:
+- '`\newpage{}`{=latex}'   # this adds a pagebreak before the toc
+---
+
+```{r setup, include=FALSE}
+rm(list = ls()) # Clear the enviroment.
+graphics.off()  # Clears plots, closes all graphics devices
+cat("\014")  # Clears console (ctrl+ L)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+pacman::p_load(pacman,tidyverse, rio, knitr, glmnet, markdown, rmarkdown, gridExtra, pander, broom)
+
+# Read in data set 
+data <- read.csv('Data.csv')
+
+# Renaming columns for ease of use 
+df <- data %>%  
+  as_tibble() %>%        # Convert to tibble
+	select(                  # Select, reorder and rename
+	   Treatment = Treatment.num.,
+		Dist = Distance..mm.,
+		SAL = Swing.Arm.Length..mm.,
+		CW = Counterweight..g.,
+		PW = Projectile.weight..g.,
+		treatmean = Treat.mean) 
+
+df <- df %>%
+      sort_by(df$Treatment)
+
+df <- df %>%
+   mutate(CSAL = CW*SAL,
+          PWCW_ratio = (PW/CW),   # projectile to counterweight ratio
+          CWPW_ratio = (CW/PW),   # counterweight to projectile ratio
+          CWPW = CW*PW,
+          PSAL = PW*SAL,
+          ALLINT = CW*PW*SAL,
+          Ex_ratio = ((2*CW)/PW)*(SAL*0.707))
+
+```
+
+\pagebreak
+\allsectionsfont{\centering}
+# Abstract
+It is common knowledge in physics and engineering, that a longer arm provides more leverage. We investigate the effects of swing-arm length when compared to other important factors in regards to catapults, specifically trebuchets. This was achieved through experimentation with 2 different lengths of swing-arms, different size projectiles and several levels of counterweight. The analysis was completed using the statistical programming language R, with Rstudio as our IDE of choice. Using R we carried out standard statistical tests to analyse the data and  we also provide justification of the tests used. The results gleaned from our experiment provide some insight into the physics of catapults, and backup the existing literature. We confirm that more counterweight and reduced projectile weight, both increase projectile range, both being highly statistically significant. However swing-arm length had the opposite effect, whereby increasing the swing-arm length actually had the effect of decreasing projectile distance. We have also provided a simple linear regression model for predicting projectile distance. Contrary to our expectations, our data ultimately shows that a bigger swing-arm, is not always better.  
+
+
+\allsectionsfont{\centering}
+# Introduction
+
+\allsectionsfont{\raggedright}
+## Importance of Study
+In terms of raising armed conflict in the world, there are a lot of opportunities for arms-producing
+companies and military services companies to seize this chance to expand and dominate this
+industry in the next few years. This is the reason why the weapons system research and
+development company RockStellar collaborated with our team (Middle Ages Engineering) to
+improve the performance of the defense system. They intend to expand the range of defense
+missile systems for better defense performance. First, we will experiment on the trebuchet to find
+which variables have the most impact on the distance the projectile moves. This experiment will
+be a premise to apply what we learn from that to develop Rockstellar’s defense systems.
+
+## Study Objectives and Variables
+
+### Aims of the Study
+By investigating and optimizing the design of the trebuchet to answer the question “How can we
+expand the shooting range of the trebuchet?”, that information will help us to increase the
+performance of RockStellar’s defense missile system. This study aims to investigate the key
+variables influencing the projectile distance of the trebuchet. Moreover, we will also figure out if
+counterweight or projectile weight has more impact on the projectile's distance. In addition, 2
+swing arm lengths will be used as blocking variables for a better conclusion.
+
+### Variables of Interest
+Response variable:
+
+- Distance (Continuous): The horizontal distance of a projectile object (marbles) was
+measured using a tape measure. The distance was measured in millimeters from the cross
+beam of the trebuchet to the center of the projectile's impact point with the ground.
+
+Predictor Variables:
+
+- Swing Arm Length (Continuous as Categorical): The trebuchet was designed with the ability to
+swap out the swing arm with another swing arm of a larger size. The experiment was run
+in 2 groups, one with a length of 320mm and one with a length of 400mm.
+- Counterweight (Continuous as Categorical): The counterweight was loaded with one of
+three weights in grams, 450g, 600g and 750g. Due to the weights of the projectile we had
+to use sufficient counterweights that would also allow for enough variance in results.
+- Projectile weight (Continuous as Categorical): The weight of the marble in the projectile
+in grams; 6.5g, 19.5g. Weights were chosen from a selection of store-bought marbles that
+would allow for enough data to obtain sufficient results.
+
+
+###  Questions to be Answered
+The experiment is aiming to answer some questions about the limits of optimizable trebuchet
+design:
+
+- What is the best way to maximize the horizontal launching distance of a trebuchet?
+- Is there a significant difference in the trebuchet’s effectiveness by changing the length of
+the swing arm?
+- How much does the variance in counterweight affect the horizontal launching distance?
+- What effect does the projectile's weight have in consideration of its design?
+- Is there a point where the weight becomes too heavy that it becomes inefficient for a
+trebuchet launch?
+
+## Assumptions and Limitations
+### Assumptions
+The following assumptions were made to enable the interpretations gained from this experiment:
+
+- The angle of release is constant across treatments.
+- The structure of the trebuchet is rigid and has no varying effects on the projectile launch
+- Wind resistance will be negligible for the velocity of our projectiles.
+- Friction of the swing-arm pivot, chute, and sling are negligible.
+- Measurements taken are accurate and precise.
+
+### Limitations
+
+- We only used two different swing-arm lengths for our experiment due to the time
+constraint.
+- Only one model of a small scale is being built which limits the range of testing
+capabilities on all factors of the experiment.
+- Many other factors are not included in the experiment, eg. Release angle, and sling
+length, ... because of the complexity of the experiment.
+- Using only one type of perfectly spherical object for payload does not accurately
+represent variation of real-world payloads
+- Only sand is considered to be the counterweight.
+
+
+\pagebreak
+\allsectionsfont{\centering}
+# Literature Review
+
+\allsectionsfont{\raggedright}
+As discussed, our experiment investigates the variables which influence the total distance or
+range of the projectile launched from a trebuchet. Investigating these relationships will provide
+insight on the optimum trebuchet design for achieving the maximum range. The said variables
+include the mass of the counterweight, the mass of the projectile, and the length of the swinging
+arm.
+To understand how the object’s range R is affected by the aspects of the trebuchet, we can begin
+the following projectile motion formula (Siano, 2001):
+
+$$R = \frac{2v^2 sin(\alpha)  cos(\alpha)}{g} $$
+Where:
+
+- v is the initial velocity of the projectile.
+- $\alpha$ is the angle of release, and
+- g is the acceleration due to gravity (Siano, 2001).
+
+Now, as discussed in the assumptions of this experiment, we do not intend to investigate changing
+the angle of release, as we deemed this would be a practical challenge. Therefore, $\alpha$ was assumed
+to be constant. It is acknowledged that several angles of release could be investigated; but for
+simplicity, let us investigate the optimum angle 45°which produces the maximum range for the
+projectile neglecting air resistance (Moebs et.al., 2016):
+
+$$R = \frac{2v^2 sin(45) cos(45)}{ g}$$
+$$R=\frac{v^2}{g}$$
+
+We acknowledge that there is some energy lost in the transfer from gravitational potential energy
+in the counterweight to kinetic energy in the projectile (Siano, 2001). This would include factors
+such as friction in the fulcrum and the guide chute, air resistance, etc (Siano, 2001). However, let
+us assume perfect efficiency for mathematics, enabling the equality of gravitational potential
+energy and kinetic energy (Dourmashkin, 2016; Lucas, 2014):
+
+$$GPE_{counterweight} = KE_{projectile}$$
+
+Let $m_1$ denote the counterweight mass and $m_2$ denote the projectile mass:
+
+$$m_1gh= \frac{m_2v^2}{2}$$
+$$ v^2=\frac{m_1gh}{m_2}$$
+$$R =\frac{\frac{m_1gh}{m_2}}{g}$$
+
+Using this expression for v 2 we obtain the following range under 100% energy efficiency:
+
+$$R= \frac{2m_1}{m_2}h$$
+
+Now, to express the counterweight height in terms of arm length l , we can use the basic sine
+ratio:
+
+$$h = l sin(\theta)$$
+
+where $\theta$ is the angle between the swing arm and the horizontal.
+Thus, we obtain the following theoretical relationship for our study:
+
+$$R= \frac{2m_1}{m_2} l sin (\theta)$$
+
+Therefore, it is expected that the range will be:
+
+- Positively correlated to the mass of the counterweight m1 .
+- Negatively correlated to the mass of the projectile m 2.
+- Positively correlated to the length of the swing arm l (if the arm angle is kept constant)
+There were several strong assumptions made in the theoretical derivation such as no air
+resistance, perfect energy exchange and a release angle of 45°. While the theoretical equation
+does not occur in the real world, the physical results obtained will shed light on more complex
+factors at play.
+
+
+
+\pagebreak
+\allsectionsfont{\centering}
+# Methods
+
+\allsectionsfont{\raggedright}
+## Experimental method
+The experiment was conducted as follows:
+
+1. The treatments were laid out and assigned numbers, then the experimental order was
+randomised using computational software.
+2. The trebuchet was then assembled with the required length swing-arm for the current
+treatment and latched to the release mechanism.
+3. The correct amount of counterweight was measured using digital scales, which was then
+recorded before placing the weight into the trebuchet counterweight basket.
+4. The projectile was then measured for size and weight using digital scales and verniers, which
+was recorded before placing the projectile into the trebuchet sling.
+5. The area was then visually checked to ensure the area was clear for launch.
+6. After the all-clear was received, the release mechanism was activated, and projectile fired.
+7. The projectile’s travel distance was then measured out using a commercial tape measure and
+recorded.
+8. Then, steps 2 through 7 were repeated until all replicates had been completed, in randomised
+order.
+
+
+## Experimental Design
+The experimental design was blocked, factorial, complete, balanced, and randomised. The
+Experimental variables are summarised in the table below:
+
+```{r, Methods: Table of Variables, message=FALSE}
+# Enter data 
+dat <- list( 
+   c("Projectile Distance", "Swing-arm Length", "Counterweight mass", "Projectile mass"),
+   c("Response", "Predictor", "Predictor", "Predictor"),
+   c("The horizontal distance measured in millimeters (mm).","2 different length swing-arms were used, 320mm and 400mm.","Sand was used as a counterweight, measured in grams.","The weight of the projectile, measured in grams."))
+# Name repair
+dat <- as_tibble(dat, 
+    .name_repair = "unique")
+# Name the columns
+dat <- dat %>% 
+  rename(Variable = "...1") %>% 
+  rename(Type    = "...2") %>% 
+  rename(Description  = "...3")
+# Display the table
+knitr::kable(dat, 
+             caption = "Variable Summary")
+```
+
+## Reasoning
+
+The distance the projectile traveled was the variable we were interested in. We measured each
+replicate, from the trebuchet crossbeam to the center of the projectile landing indentation. 
+
+Projectile weight was chosen as a factor because it was easy to control and measure, if using a
+suitable projectile. The projectiles we chose to use were marbles for several reasons. Firstly, the
+uniformity of marbles meant in the event of a projectile being lost or damaged, we could easily
+source another almost identical one. Secondly, the smooth surface meant that we would have
+less variation in the model due to wind resistance as the velocity of the projectile changes. Thirdly
+it was easy and inexpensive to source marbles of the required parameters. The 2 levels of
+projectile weight were 6.5g and 19.5g.  
+
+The two levels of swing-arm length used in our experiment were 320mm, and 400mm. We
+included it as a blocking variable to ascertain it’s effect. Both swing-arms had the same L1 to L2
+ratio ensuring that the arms have a similar energy transfer efficiency. This was done so as not to
+induce extra variation in the model. The initial angle between the swing-arm and the horizontal
+was maintained between the two swing arms. This ensured that the start angle was equal,
+allowing for similar energy transfer to the projectile.  
+
+The third factor we included in the experiment was the counterweight mass, with the three
+levels being 450g, 600g and 750g including the basket. These weights were chosen because of
+the size of the trebuchet and weight of the projectiles. The weight needed to be heavy enough to
+launch the projectile but not so heavy that it made the data collection difficult and distorted
+results.  
+
+To ensure completeness, each level, of every factor was combined with all the others, resulting in
+a total of 12 treatments. Each treatment was replicated 3 times, thus ensuring the balanced
+criteria was met.  
+
+## Trebuchet Specifics
+- Swing-arm ratio: L2 = 3.75 L1, lengths : 320mm and 400mm.
+- Initial Angle of swing-arm(theta): 45 degrees from horizontal.
+- Sling length (L3) = 150mm.
+
+
+\pagebreak
+\allsectionsfont{\centering}
+# Exploratory Analysis
+\allsectionsfont{\raggedright}
+In this section the data is explored to ascertain possible interactions between variables and inform the final
+analysis. All relevant data and code is contained in the appendices.
+
+## Initial Expectations 
+From our intuition and the literature review, we had a number of expectations.
+
+- That counterweight and distance have a positive linear relationship (the distance increases as the 
+counterweight increases).
+- That the projectile weight and distance have a negative linear relationship (the distance decreases
+as the projectile weight increases).
+- That Swing arm length and distance have a positive linear relationship (within a reasonable range).
+- That there would be significant interaction between the counterweight and projectile weight.
+- That a particular 3 way interaction would be the most significant and provide the most explanatory power in 
+the analysis. which is the following equation:
+$$ \text{Distance} \approx \frac{2*CW}{PW}*SAL*sin(\text{release angle})$$
+
+
+## Data Summary
+### Data statistics
+
+``` {r}
+datsum <- summary(df[2:5])
+kable(datsum, 
+      caption = "Data Statistics Summary")
+```
+
+\newpage{}
+###  Distance summary
+
+```{r, Distance Summary Plots, fig.height = 3,fig.cap= "Response Plots"}
+
+# Treatment means 
+plot1 <- ggplot(df, 
+   aes(x = 0, y = Dist,)) +
+   geom_boxplot() +
+   geom_point() +
+   xlim(c(-1,1)) +
+   ylab("Mean Distance (mm)") + 
+   xlab("Response Variable") +
+   theme(legend.position = "none")
+
+plot2 <- ggplot(df, 
+       aes(x = Dist)) + 
+  geom_histogram(binwidth = 300) +
+   xlab("Distance")
+
+grid.arrange(plot1, plot2, ncol = 2)
+```
+
+
+The plots above show that the distance across all trials had a fairly even spread, although there does look to be 2 groupings with a decent spread.They also show that it looks like we probably have an outlier at the high end, which is going to be formally checked. The histogram on the right may be indicating that some of the treatments were quite consistent with all 3 replicates being quite close together, which is confirmed in the data set.
+ 
+
+\newpage{}
+### Predictors Summary
+
+```{r, Predictor Summary Plots, fig.height = 3, fig.cap= "Predictor Plots"}
+
+# PW vs Dist
+plot3 <- ggplot(df, 
+   aes(x = PW, y = Dist, 
+       group = PW,
+       color = PW)) +
+   geom_boxplot() +
+   geom_point()+
+   labs(y = "Distance", x = "Projectile Weight") +
+   theme(legend.position = "none")
+# CW vs Dist
+plot4 <- ggplot(df, 
+   aes(x = CW, y = Dist, 
+       group = CW,
+       color = CW)) +
+   geom_boxplot() +
+   geom_point()+
+   labs(y = '', x = "Counterweight") +
+   theme(legend.position = "none")
+
+# SAL vs Dist  
+plot5 <- ggplot(df, 
+   aes(x = SAL, y = Dist, 
+       group = SAL, 
+       color = SAL)) +
+   geom_boxplot() +
+   geom_point()+
+   labs(y = '', x = "Swing Arm Length") +
+   theme(legend.position = "none")
+
+grid.arrange(plot3, plot4, plot5, ncol = 3)
+```
+
+The plots above are the predictor variables vs distance. We can see the projectile weight is negatively correlated with distance, as we expected and the relationship is quite strong with a score of `r cor(df$Dist,df$PW)`. From this we estimate that the distance will be quite sensitive to changes in the projectile weight. 
+
+The counterweight has a positive relationship with distance with a correlation score of `r cor(df$Dist,df$CW)`. From this we expect that distance will be somewhat sensitive to a change in counterweight. The plot also shows that the IQR seems to decrease as the counterweight increases however, the total range seems to slightly increase.
+
+The swing-arm length is negatively correlated with distance (`r cor(df$Dist,df$SAL)`), which was opposite to what we had expected prior to looking at the data. We believe that it is due to a combination of factors including the extra weight of a longer swing-arm and the higher force required to overcome the added leverage of the projectile weight that has caused this. It also looks like the longer swing-arm possibly has an outlier on the low end. 
+
+\newpage{}
+
+###  Data grouped by Swing-arm
+
+```{r, Predictor plots cont., message = FALSE, fig.height= 3, fig.cap = "Predictor Plots continued"}
+swp1 <- ggplot(df, 
+   aes(CW, Dist,
+       group = SAL,
+       color = SAL)) +
+   geom_point(size = 2) +
+   labs(x = "Counterweight", y = "Distance") +
+   lims( y = c(200,6500))+
+      theme(legend.position = "none") +
+      geom_smooth(method = lm)
+
+swp2 <- ggplot(df, 
+   aes(PW, Dist,
+       group = SAL,
+       color = SAL)) +
+   geom_point(size = 2) +
+   labs(x = "Projectile weight", y = "") +
+   lims( y = c(200,6500))+
+      theme(legend.position = "none") +
+      geom_smooth(method = lm)
+
+grid.arrange(swp1, swp2, ncol = 2)
+```
+
+
+
+Once the plots are grouped by swing arm length, we can see that the estimated slope for counterweight looks to be different for each length of swing-arm. This indicates that there is likely an interaction between counterweight and swingarm length. The projectile weight slope looks to be the same across both lengths of swing-arm, indicating that there is no interaction between projectile weight and swing-arm length. 
+
+
+## Accuracy of data. 
+The measurement accuracy of the collected data is within 3mm for distance due to rounding error and less than 5g for counterweight. Which is at maximum `r  round(15/min(df$Dist), 4)`% error due to rounding in the resulting distance. Unfortunately the reliability of the results is affected by more than rounding errors. 
+
+There was a couple of sources of unaccounted variability in the experiment results. Firstly, during the experiment we discovered that there was an interaction between the release angle and the speed of the swing which we had not accounted for. Unfortunately as we were using a trebuchet, we were unable to control the release angle. This means that there  is an interaction affect that increases with counterweight. Secondly, due to the stormy weather on the day, we believe that the wind affected the results, as it was not a constant across all treatments. 
+
+\pagebreak
+\allsectionsfont{\centering}
+# Formal Analysis
+
+\allsectionsfont{\raggedright}
+## Statistical Techniques used
+The statistical techniques used in this investigation were analysis of variance (ANOVA) and a linear regression
+model. A significance level (“alpha”) of 0.05 was used to tests all hypotheses and determine statistically 
+significant results.
+
+### Analysis of variance
+Analysis of variance is used to determine how much of the dataset’s variation is explained by predictors and 
+how much is attributed to random noise (McDonough, 2024). The technique is powerful when comparing multiple 
+factor variables with a continuous output variable. This was a suitable technique for our investigation
+because the predictor variables we chose were factorial in nature and consisted of a low number of discrete 
+levels.
+
+Formally, the total sum of squared differences from the mean (SST) consists of the sum of squares between groups ($SS_{between}$) and the sum of squared variation from the mean within each group ($SS_{within}$):
+
+$$ SST = SS_{between} + SS_{within}$$
+
+Assuming the residuals are (1) independent, (2) normally distributed and (3) have constant variance, 
+the following null hypotheses can be tested (Hassan, 2023): 
+$$ H_0: \mu_1 = \mu_2 = ... = \mu_k $$
+$$ H_a: \text{at least one } \mu_1 \neq \mu_2 = ... = \mu_k $$
+where k is the number of factor variables. 
+
+A Tukey’s honest significant difference (HSD) test can be subsequently performed to investigate which groups are statistically distinct from one another. This includes a hypothesis test to determine whether the difference 
+in means for factor levels is non-zero:
+$$ H_0: \mu_1 = \mu_2 = ... = \mu_k $$
+This test can also be carried out on a complete linear model including interactions, thus testing the 
+difference in means for every possible combination of treatments.
+
+
+
+### Linear regression
+Linear regression is a statistical technique in which predictor variables are used to construct a linear 
+additive equation which is set equal to the response variable (Stewart, 2024). This technique is extremely 
+useful because it isolates each predictor’s effect on the response into one linear model. This 
+is strictly in the form:
+$$y = \beta_0+\beta_1 x_1 + \beta_2 x_2 + ... + \beta_k x_k$$
+The value of each $\beta_i$ reflects how much the response would increase if $x_i$ was increased by 1 unit, 
+except for $\beta_0$, which corresponds to launch distance if every other variable is set to zero. The benefit
+of multiple linear regression is that no matter how many predictors there are, each variable has a positive 
+or negative effect on the output. The model can even include interactions between variables which increases 
+the overall explanatory ability. 
+
+Under key specific assumptions, we can test both the significance of the model as well as each individual predictor. 
+These assumptions include:
+- Linearity: By designing a linear model, we are assuming that there is a linear relationship between each predictor and the output variable.
+- Normality: We assume that the residuals are normally distributed so that we can then use the normal distribution to conduct unbiased hypothesis testing techniques. This enables us to report on key statistics such as confidence intervals and p-values of individual parameters.
+- Constant Variance: We must assume that the variance of the residuals is constant regardless of the output variable. If this is assumption is not satisfied, our predictions regarding standard error and confidence intervals will be misguided.
+- Independence: It is assumed that the experimental results obtained do not depend on previous results. If this is the case, our ability to make predictions about the population is severely limited because the results we obtained were affected by the order of observations.
+-Multicollinearity: This is where the predictors are highly correlated with each other, and if it is violated we are unable to trust our regression results.
+
+
+## Results
+
+### Initial Regression model
+We created a linear regression model in R using the 3 predictors to further investigate the data. 
+$$\hat Distance = \beta_0 + \beta_1 \text{Counterweight} +  \beta_2 \text{Swing-arm length} +\beta_3 \text{Projectile weight} +  \epsilon_i$$
+
+```{r, initial model}
+fit.lm <- lm(Dist ~ CW + SAL + PW, data = df)
+summary(fit.lm) %>%
+   pander()
+
+```
+
+This model treats all the variables as continuous and it found that all factors were highly significant, with 
+p-values well below the $\alpha$ level of 0.05. The results showed that all explanatory variables had a significant relationship with launch distance. As such, under a significance level of 0.05, we judge each variable to be statistically significant. 
+From a physics theory perspective, we expected swing arm length to have positive correlation with launch distance. However, contrary to our expectations, our results shows that the opposite is true with extraordinary significance $(p < 7.3e-09)$. With an adjusted R squared value of 0.955, this model explains around 95% of the variation in our dataset.
+
+From here we moved onto the initial checking of assumptions.
+
+```{r Residual Plots, fig.cap= "Residual Plots", fig.height= 3.5}
+
+plot6 <- ggplot(df, 
+   aes(PW, fit.lm$residuals,
+       color = SAL)) +
+   geom_point(size = 2) +
+   ylab("Residuals") + 
+   xlab("Projectile Weight") + 
+   theme(legend.position = "none")+ 
+   geom_hline(aes(yintercept = 0), colour ='red')
+
+plot7 <- ggplot(df, 
+   aes(CW, fit.lm$residuals,
+       color = SAL)) +
+   geom_point(size = 2) +
+   ylab("Residuals") + 
+   xlab("Counterweight") + 
+   theme(legend.position = "none")+ 
+   geom_hline(aes(yintercept = 0), colour ='red')
+
+plot8 <- ggplot(df, 
+   aes(SAL, fit.lm$residuals,
+       color = SAL)) +
+   geom_point(size = 2) +
+   ylab("Residuals") + 
+   xlab("Swing Arm Length") + 
+   theme(legend.position = "none")+ 
+   geom_hline(aes(yintercept = 0), colour ='red')
+
+
+plot9 <- ggplot(df, 
+   aes(fit.lm$fitted.values, fit.lm$residuals,
+       color = SAL)) +
+   geom_point(size = 2) +
+   ylab("Residuals") + 
+   xlab("Fitted Values") +
+   theme(legend.position = "none")+ 
+   geom_hline(aes(yintercept = 0), colour ='red')
+
+indi <- ggplot(df, 
+      aes(x = 1:36, y = fit.lm$residuals)) + 
+      geom_line() +
+      ylab("Residuals") + 
+      xlab("Index") +
+      theme(legend.position = "none")+ 
+      geom_hline(aes(yintercept = 0), colour ='red')
+      
+
+hist <- ggplot(NULL, 
+       aes(x = fit.lm$residuals)) + 
+  geom_histogram(binwidth = 75) +
+  xlab("Histogram")
+
+qplot <- ggplot(NULL, 
+       aes(sample = fit.lm$residuals)) + 
+   geom_qq() +
+  geom_qq_line() +
+   xlab("QQ Plot")
+
+grid.arrange(plot9, plot6, plot7,plot8, ncol = 2, nrow = 2)
+```
+
+Linearity: There appears to be no obvious curvature or patterns in the residual plots. There could be an issue
+in the counterweight plot, as it starts to get wider at both ends. As previously mentioned it also looks like 
+there is a couple of unusual observations.
+
+Homoskedasticity: Other than the aforementioned fanning in the counterweight plot, the looks like there could 
+be some tapering in the swing-arm length plot. Could be some violation but the formal analysis will reveal that.
+
+
+```{r, fig.height= 3.5}
+grid.arrange(indi, hist, qplot, ncol = 2, nrow = 2)
+```
+
+Independence: The independence plot looks good, and is independence is satisfied by the experimental design.
+
+Normality: looks to be some minor violations in the normality, we can see the histogram is showing 2 groupings.
+However, the QQplot looks mostly good, maybe some patterning, but it is following the line. It could be that 
+more data would rectify this but $n > 30$ is usually enough to satisfy the central limit theorem.  
+
+No prior Interactions/dependencies: Due to experimental design and factors chosen, none of the factors depend 
+on any other prior to the experiment.
+
+```{r, cor matrix calculation}
+CM <- cor(df[,3:5])
+cormat <- round(CM,2) 
+```
+
+Multicollinearity: We can formally check for multicollinearity with a correlation matrix, as we can see below none of the predictors are correlated with each other.
+
+```{r, cor matrix table}
+knitr::kable(cormat, 
+             caption = "Data Statistics Summary")
+```
+
+
+\newpage{}
+### Model Selection
+Next we calculated the expected distance according to the literature and added it to the model. It did not help to explain the variation in our data, at the set significance level. As it was not helpful and made interpreting the model quite difficult we removed it from the model and went it favor of other methods for Model selection. 
+
+```{r}
+expect.lm <- lm(Dist ~ (Ex_ratio) + CW + SAL + PW, data = df)
+expect.out <- tidy(expect.lm)
+expect.out[,2] <- round(expect.out[,2], 2)
+expect.out[,3:5] <- round(expect.out[,3:5], 4)
+expect.out[2,1] <- "Expected Ratio"
+kable(expect.out, 
+      caption = "Expected model")
+```
+
+
+
+### Stepwise Regression
+I nteractions were explored via stepwise regression with the view of finding a more precise model. The method used involved measuring the Akaike Information Criterion (AIC) for each model step until minimum AIC was found. The AIC statistic provides a measure of a model’s predictive power but also accounts for the number of parameters it takes. This designates the most predictive model but also attempts to prevent the problem of over-fitting (Cavanaugh & Neath, 2019). We used backwards stepwise regression, starting from a full model including all possible interactions, and progressively omitting predictors to find the minimum AIC value.
+
+
+
+```{r, include=FALSE}
+full.lm <- lm(Dist ~ CW + SAL + PW + CW/PW + PW*SAL + CW*SAL + PW*CW*SAL, data = df)
+stepped.lm <- step(full.lm, direction = 'backward')
+```
+
+```{r, message=FALSE}
+dat <- list( 
+   c("Dist = CW +SAL + PW + CW:PW + PW:SAL + CW:SAL+ CW:PW:SAL", "Dist = CW +SAL + PW + CW:PW + PW:SAL + CW:SAL", "Dist = CW +SAL + PW + CW:PW + CW:SAL"),
+   c(414.65, 412.78, 410.78))
+# Name repair
+dat <- as_tibble(dat, 
+    .name_repair = "unique")
+# Name the columns
+stepdat <- dat %>% 
+  rename(Model = "...1") %>% 
+  rename(AIC    = "...2") 
+# Display the table
+knitr::kable(stepdat, 
+             caption = "Stepwise Summary")
+```
+
+
+
+
+
+###  Partial F Test
+The stepwise model included interaction between counterweight and swing arm length. Thus, we employed a partial f-test to determine whether this interaction was needed. This meant testing to see if there was a statistically significant difference between the model and its reduced version. The resulting p-value of 0.053 is above the 
+$\alpha$ level of 0.05 and thus the interaction was removed from the model. 
+
+
+```{r, include=TRUE}
+reduced.step <- lm(Dist ~ CW + PW + SAL + CW / PW, data = df)
+anova(reduced.step,stepped.lm) %>%
+   pander(caption = "F test")
+```
+
+
+## Final model
+
+### Justification
+$$\hat Distance = \beta_0 + \beta_1 \text{Counterweight} +  \beta_2 \text{Swing-arm length} + \beta_3 \text{Projectile weight} + \beta_4 \text{CW:PW} + \epsilon_i$$
+The final model as an adjusted $R^2$  value of  0.958, which indicates it explains nearly 96% of the variation in our data. This is only a slight increase ov the initial model with no interactions. The backwards stepwise model has the highest statistical power in terms of maximising adjusted R2 value while minimising AIC and RSE. However, the partial f-test revealed that the interaction between counterweight and swing arm length was not necessary. In other words, there was no significant difference between the model and its reduced counterpart. 
+Therefore, we believe the model that best explains the data set while including relevant variables is the reduced backwards stepwise model. Due to the vast literature on this subject, we believe that the weight ratio would become much more significant when testing weights outside of the ranges in our experiment. Hence, why it has been included in the final model while only having a p-value of 0.0788.
+
+```{r}
+final.lm <- lm(formula = Dist ~ CW + PW + SAL + (CW/PW), data = df)
+final.out <- tidy(final.lm)
+final.out[,2] <- round(final.out[,2], 2)
+final.out[,3:5] <- round(final.out[,3:5], 4)
+final.out[5,1] <- "Weight Ratio"
+kable(final.out, 
+      caption = "Final model")
+
+```
+
+We can interpret the significant parameters in the model to say that: 
+
+- A 1g increase in counterweight will lead to a 4mm increase in launch distance. 
+- A 1g increase in projectile weight will lead to a 243mm decrease in launch distance. 
+- A 1mm increase in swing arm length will lead to a 9.8mm decrease in launch distance. 
+
+To evaluate our choice to include only this interaction in the reduced model, we conducted an analysis of variance (ANOVA) and Tukey Honest Significant Difference (HSD) test on the full model. For computational reasons, each variable was required to be transformed into a factor. The ANOVA and Tukey’s HSD output is shown below. 
+
+### ANOVA
+
+```{r, include=TRUE}
+final.aov <- aov(Dist ~ as.factor(CW)/as.factor(PW) + as.factor(CW) + as.factor(PW) + as.factor(SAL), data = df)
+summary(final.aov) %>% 
+   pander()
+```
+
+As we can see from the ANOVA output, the only parameters which showed a significant difference in means between factor levels were the three individual experimental variables. All interactions obtained p-values outside the required significance level (<0.05), meaning that the variation between groups, explained variation, was not sufficiently large in comparison to the variation within groups, that is, random variation. However, we do note that the interaction between the two weights (the “weight-ratio”) is almost significant, and we will informally conclude that it has some bearing on the response variable, as expected by theory.
+Tukey HSD output for the parameters included in the final model.
+
+### Tukey's HSD
+```{r, include=TRUE}
+final.tuk <- TukeyHSD(final.aov)
+tuksum <- tidy(final.tuk)
+tuksum[1:3,1] <- "CW"
+tuksum[4,1] <- "PW"
+tuksum[5,1] <- "SAL"
+tuksum[6:20,1] <- "CW/PW"
+kable(tuksum, 
+      caption = " TukeyHSD")
+```
+
+As shown in the Tukey’s HSD comparisons, all treatments are significantly different inside each parameter, including the weight ratio. This is particularly shown by the p-values for each difference, which are all under the critical $\alpha$ of 0.05. The 95 percent confidence intervals for each comparison reinforce this finding because none of them span over zero. This indicates that there is a strong correlation between each parameter and the response variable.  
+
+
+
+\newpage{}
+### Checking outliers
+```{r, include=FALSE}
+k <- 5 # number of predictors
+n <- NROW(df) # sample size
+X <- model.matrix(final.lm)
+
+
+Unusual_Observations <- data.frame(leverage = hat(X),
+standardised = rstandard(final.lm),
+studentised = rstudent(final.lm),
+cooks = cooks.distance(final.lm))
+
+which(Unusual_Observations$leverage>(2*(k+1)/n))
+
+which(abs(Unusual_Observations$standardised)>2)
+
+which(abs(Unusual_Observations$studentised)>2)  # result is called an outlier when the studentised residual is greater than 2.
+
+which(Unusual_Observations$cooks>1) # Leverage points
+
+```
+
+``` {r, include=TRUE}
+
+Unusual_Observations %>%
+   pander()
+```
+
+We can see here that we have 2 outliers, (`r which(abs(Unusual_Observations$studentised)>2) %>% pander()`).
+The average leverage for our experiment is `r 6/32`. Both outliers have leverage beelow the treshold of `r 12/32`, which means they are not leverage points. Both outliers also had a cooks distance of less than 1, meaning that they are not influential observations for our final model.  
+
+\newpage{}
+### Rechecking Assumptions
+
+```{r Final model Plots, fig.cap= "Residual Plots", fig.height= 8}
+
+plot6 <- ggplot(df, 
+   aes(PW, final.lm$residuals,
+       color = SAL)) +
+   geom_point(size = 2) +
+   ylab("Residuals") + 
+   xlab("Projectile Weight") + 
+   theme(legend.position = "none")+ 
+   geom_hline(aes(yintercept = 0), colour ='red')
+
+plot7 <- ggplot(df, 
+   aes(CW, final.lm$residuals,
+       color = SAL)) +
+   geom_point(size = 2) +
+   ylab("Residuals") + 
+   xlab("Counterweight") + 
+   theme(legend.position = "none")+ 
+   geom_hline(aes(yintercept = 0), colour ='red')
+
+plot8 <- ggplot(df, 
+   aes(SAL, final.lm$residuals,
+       color = SAL)) +
+   geom_point(size = 2) +
+   ylab("Residuals") + 
+   xlab("Swing Arm Length") + 
+   theme(legend.position = "none")+ 
+   geom_hline(aes(yintercept = 0), colour ='red')
+
+
+plot9 <- ggplot(df, 
+   aes(final.lm$fitted.values, final.lm$residuals,
+       color = SAL)) +
+   geom_point(size = 2) +
+   ylab("Residuals") + 
+   xlab("Fitted Values") +
+   theme(legend.position = "none")+ 
+   geom_hline(aes(yintercept = 0), colour ='red')
+
+indi <- ggplot(df, 
+      aes(x = 1:36, y = final.lm$residuals)) + 
+      geom_line() +
+      ylab("Residuals") + 
+      xlab("Index") +
+      theme(legend.position = "none")+ 
+      geom_hline(aes(yintercept = 0), colour ='red')
+      
+
+hist <- ggplot(NULL, 
+       aes(x = final.lm$residuals)) + 
+  geom_histogram(binwidth = 75) +
+  xlab("Histogram")
+
+qplot <- ggplot(NULL, 
+       aes(sample = final.lm$residuals)) + 
+   geom_qq() +
+  geom_qq_line() +
+   xlab("QQ Plot")
+
+grid.arrange(plot9, plot6, plot7,plot8,indi, hist, qplot, ncol = 2, nrow = 4)
+```
+
+Linearity: There appears to be no obvious curvature or patterns in the residual vs fitted plots, or in the residual vs predictor plots. Which means that the doesn't appear to be any serious violations. 
+
+Independence: The independence plot looks good, and is independence is ensured by the random part of the experimental design.
+
+Normality: After accounting for the outliers, the histogram of the final model looks much better and appears to be normal.The same is true for the QQ plot, with the residuals following the line. 
+
+Homoskedasticity: There looks to be some tapering in the counterweight plot. Some minor violation however, after our investigation we believe this due to the release angle variation that we could not control for.
+
+
+
+
+
+
+
+
+\pagebreak
+\allsectionsfont{\centering}
+#  Conclusion
+\allsectionsfont{\raggedright}
+This report was created in conjunction with RockStella Corporation to improve weapon-based defense systems by studying the factors affecting a weight-based payload system. Specifically, whether increasing the swing-arm length or the counterweight would be more effective in enhancing a trebuchet's performance. 
+
+A miniature model of a trebuchet was constructed to test three main variables that might affect payload distance: swing-arm length, counterweight weight, and payload weight. Due to time and complexity constraints, the scope of the variables studied was limited. Based on existing physics literature, we initially hypothesized that the payload distance would be positively correlated with both the mass of the counterweight and the length of the swing arm, and negatively correlated with the mass of the projectile. 
+
+The experiment design was factorial, complete, balanced and randomised, with all necessary measurements recorded. The initial results indicated that a shorter swing arm length and lighter payload weight, combined with a heavier counterweight, resulted in greater distances achieved by the trebuchet. These findings aligned with our expectations except for the swing arm length, which was negatively correlated with the payload distance. 
+
+We applied a simple linear regression model to the data, followed by an ANOVA to assess how much variance could be attributed to unmeasured variables and random noise. The ANOVA results were satisfactory, with only minor violations of key assumptions, suggesting no significant external influences on the results. Existing literature indicates the importance of the ratio between counterweight and payload weight. A stepwise regression model was employed to optimize the combination of predictor variables, resulting in a final linear model that included all three predictor variables and the weight ratio between the counterweight and payload. 
+
+The final model indicates that the most effective way to increase the distance of a projectile is to increase the counterweight, as this was the only variable with a positive linear correlation. The negative correlation of swing-arm length, suggests there is an optimal range for swing-arm length, and our lengths may have been at or beyond this maximum. 
+
+
+
+\pagebreak
+\allsectionsfont{\centering}
+# References
+
+
+| Cavanaugh, J. E., & Neath, A. A. (2019). The Akaike information criterion: Background,
+|    derivation, properties, application, interpretation, and refinements. Wiley Interdisciplinary 
+|    Reviews: ComputationalStatistics, 11(3), e1460. https://doi.org/10.1002/wics.1460
+
+| Dourmashkin, P. (2016). Classical Mechanics. Massachusetts Institute of Technology.
+|    https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/
+
+| Hassan, M. (2023, May 31). ANOVA (Analysis of variance). Research Method.
+|    https://researchmethod.net/anova
+
+| Lucas, J. (2014, June 12). What is kinetic energy? Retrieved March 28, 2023, from
+|    https://www.livescience.com/46278-kinetic-energy.html
+
+| McDonough, M. (2024, March 29). ANOVA. Encyclopedia Britannica.
+|    https://www.britannica.com/topic/variance-analysis-statistics
+
+| Moebs, W., Ling, S., & Sanny, J. (2016). University Physics (Vol. 1). OpenStax.
+|    https://openstax.org/details/books/university-physics-volume-1
+
+| Siano, D. (2001) Trebuchet Mechanics. Weber State University.
+|    https://faculty.weber.edu/kharward/MET1000/trebmath35.pdf
+
+| Stewart, K. (2024, March 29). linear regression. Encyclopedia Britannica.
+|    https://www.britannica.com/topic/linear-regression:
+
+| Urone, P. & Hinrichs, R. (2022). College Physics (edition 2e). OpenStax.
+|    https://openstax.org/books/college-physics/pages/1-introduction-to-science-and-the-realm-
+|    of-physics-physical-quantities-and-units
+
+
+\pagebreak
+\allsectionsfont{\centering}
+
+# Appendicies 
+## Meeting journal
+
+### Meeting 1: Planning for the Data Collection Plan \
+Time: 20:00\
+Date: 20/03/2024\
+Attendees:	ALL group members.\
+
+Meeting summary:
+
+-	The group decided that we could build a mini trebuchet and look at varying factors of its effectiveness.
+-	Counterweight, Swing Arm Length, and Projectile Weight are considered the predictor variables in this project.
+-	Chase assured us that he had built a trebuchet before and was interested in the topic, so we decided to let him design and build a trebuchet.\
+
+The assigned tasks for each member:\
+Lucas: Take care Literature Review and Reference\
+Chase: Write the methods and build a trebuchet\
+Kyle: Write about the variables and meeting notes\
+Stephen: Format the report and write the importance of the study\
+
+
+### Meeting 2: Update the process and finalise the Data Collection Plan \
+Time: 20:00\
+Date: 26/03/2024\
+Attendees: ALL members\
+Meeting summaries:\
+
+-	Update the process:
+-	All members were going to finalise their tasks and did not have any work difficulties
+-	Chase decided the swing arm length would be the blocking variable
+-	Lucas had done 80% of the Literature Review
+-	Stephen has finished the importance of the study
+-	Chase started building the trebuchet and was done with 70% of the Method
+-	In the previous meeting, we forgot to assign tasks for the limitations and the aims of this study
+-	Stephen already finished his part, so he took responsibility for the aims of this study
+-	Everyone would put any suggestions for the limitations of the experiment in the Slack groups for review by other members and sign the Planning Checklist
+
+\pagebreak
+
+### Meeting 3: Discuss and revise the content from the Data Collection Plan’s feedback\
+Time: 20:00\
+Date: 10/04/2024\
+Attendees: Stephen, Chase, Lucas\
+Meeting summary:\
+
+-	We received grades and feedback from Leah for the Data Collection Plan, and we decided to have a meeting to discuss that
+-	We changed the Swing Arm Length to a Continuous Variable instead of a Blocking Variable and reduced the number of levels for Projectile Weight to two as advised by Leah
+-	We must finish the data collection plan checklist which was to be completed last week
+-	Chase finished the trebuchet design and has completed 50% of the construction process and that will be done next week
+
+
+### Meeting 4: Plan for the Data Collection\
+Time: 20:00\
+Date: 17/04/2024\
+Attendees: Stephen, Chase,	Lucas\
+
+Meeting summary:
+
+-	Kyle messages on Slack that he will not be able to do the Data Collection, so we have three people to do that.
+-	Chase finished the trebuchet so our Data Collection will be held this week
+-	Finalise the time and location of the Data Collection
+-	We decided to do the ANOVA and the regression for our statistical analysis
+-	Chase did the randomise treatment order in R to make sure that the experiment conditions were satisfied
+
+
+\pagebreak
+### Meeting 5: Working with R\
+Time: 20:00\
+Date: 27/04/2024\
+Attendees: Stephen, Chase, Lucas\ 
+
+Meeting Summaries: 
+
+-	Our data collection went well so now we have the data to work on that 
+-	Chase created a GitHub repo for us to work together on that 
+-	Lucas uploaded the data to the repository 
+-	Kyle will be not available for the presentation\
+
+The assigned tasks for each member:
+
+-       Chase, Lucas, and Stephen: start data analysis process
+-       Stephen: takes care of the slides for our presentation
+
+
+### Meeting 6: Prepare for the presentation\
+Time: 20:00\
+Date: 09/05/2024\ 
+Attendees: Stephen, Chase, Lucas\
+
+Meeting Summaries: 
+
+-	The presentation will be held next week, we created this meeting to update the process and assign some tasks to members 
+-	Stephen has done the outline for the slides; other members add the result of the analysis to finish the slides of the part they take responsibility 
+-	We decided to not include the ANOVA analysis in our presentation 
+
+Plan for the presentation: 
+
+-	Stephen: Introduce and take care of the Project Background 
+-	Chase: Present the Experimental Design, Exploratory Analysis, and Result 
+-	Lucas: Take care of the Formal Analysis 
+
+The assigned task for the analysis: 
+
+-	Stephen: The plots Response Variable vs Predictor Variables and figured out unusual observations 
+-	Chase: The plots to check assumptions and summarising the assumptions 
+-	Lucas: The Step-Wise Regression to figure out the final model 
+
+
+\pagebreak
+### Meeting 7: Presentation trial and start on Final Report\
+Time: 20:00\
+Date: 15/05/2024\
+Attendees: Stephen, Chase, Lucas\
+
+Meeting summarises: 
+
+-	Everyone has done the analysis well and added that into the slides for the presentation 
+-	We run the trial for our presentation on Friday 
+-	Finalise the slides and start on our Final Report 
+
+Assign tasks for the Final Report: 
+
+-	Stephen: Abstract and Appendices 
+-	Chase: Exploratory Analysis 
+-	Lucas: Result 
+-	Kyle: Conclusion 
+
+
+### Meeting 8: Finalise the final report\
+Time: 20:00\
+Date: 25/05/2024\
+Attendees: All group members\
+
+Meeting summaries:
+
+-	We received grades and feedback for our presentation
+-	After review and consideration, we decided that include the ANOVA in our final report, which we did not include in the presentation
+-	Chase has formatted and put what we have done in the final report into the R Markdown file, we can export that when it is ready
+-	The final report has done 90%, and now we are finalising the assumptions for the final model and conclusions
+-	Everyone will walk through the file to complete the details and avoid mistakes
+
+\allsectionsfont{\raggedright}

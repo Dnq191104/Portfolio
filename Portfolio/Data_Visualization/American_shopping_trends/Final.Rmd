@@ -1,0 +1,324 @@
+---
+title: "Final Project MXB262"
+author: "Stephen Dang"
+date: "2024-06-04"
+output: html_document
+---
+```{r}
+# Loading library
+library(cowplot)
+library(ggplot2)
+library(ggrepel)
+library(ggspatial)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+library(maps)
+library(stringr)
+```
+
+## Main message
+
+In light of globalization, there are a lot of opportunities for foreign fashion enterprises to expand their business and develop their brand in The United States, one of the biggest fashion consumer markets. This report will help them to understand the market share, consumer behaviour, and fashion trends to have a suitable strategy to access this billion-dollar market. Firstly, the report will analyze the distribution of market share which is evaluated by the total purchase amount across states (excluding Alaska and Hawaii) through Choropleth Map which helps them to evaluate where to base their store and warehouse. Second, the heat map illustrates the Average Purchase Amount by Purchase Frequency and Payment Method will help the marketing department to envision the customer shopping habits. Finally, the report will deliver a bar plot showing the Total Purchase Amount by Category, which provides insightful information to the developing product department to understand the trending product categories to convert or focus on developing their mainstream products. 
+
+The main message is that the region, which includes the states of California, Nevada, Idaho, and Montana, is the best place for them to establish their brand in the US with their first flagship store because it has the largest total purchase volume in the entire United States. Moreover, the marketing department should focus on the customers who often pay by Venmo and Credit Card by strategizing the marketing campaign to boost sales for these customers who usually purchase more than other customers who pay by different methods. Then regular customers pay by Bank Transfer and PayPal is the customer group that potentially applies the new marketing strategies to attract them because they make lower average purchase amounts. Last but not least, the developing product team could focus on developing the products belonging to Clothing and Accessories, which are trending categories with the highest purchase amount and could play a significant part in generating revenue for the company.
+
+
+## 1. The Customer Shopping Preferences Dataset
+
+```{r}
+# Read the data set
+data <- read.csv("shopping_trends.csv")
+```
+
+Source: https://www.kaggle.com/datasets/iamsouravbanerjee/customer-shopping-trends-dataset
+
+The dataset contains 3900 records of customer transactions. This includes 19 columns that contain information about shopping transactions. 
+
+Important columns:
+
+* Customer ID: Unique identifier for each customer
+
+* Age: Age of the customer
+
+* Gender: Gender of the customer (Male/Female)
+
+* Item Purchased: The specific item purchased by the customer
+
+* Purchase Amount (USD): The amount of the purchase in USD
+
+* Location: Where the purchase was made
+
+* Review Rating: Rating given by the customer for the purchased item
+
+* Subscription Status: Indicates if the customer has a subscription (Yes/No)
+
+* Payment Method: Customer’s most preferred payment method
+
+* Frequency of Purchases: How often the customer makes purchases (e.g., Weekly, Fortnightly, Monthly)
+
+
+
+## 2. Critical Analysis
+
+
+### 2.1 First Visualization: Choropleth Map show the Total purchase amount across states
+
+```{r}
+# Clean data
+
+purchase_by_state <- aggregate(Purchase.Amount..USD. ~ Location, data = data, FUN = sum)
+colnames(purchase_by_state) <- c("State", "Total_Purchase_Amount_USD")
+purchase_by_state$State <- tolower(purchase_by_state$State)
+
+
+states <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+states <- cbind(states, st_coordinates(st_transform(crs = 4326,st_centroid(st_transform(crs = 3857,states)))))
+
+merged_data <- merge(states, purchase_by_state, by.x = "ID", by.y = "State", all.x = TRUE)
+
+state_abbreviations <- data.frame(
+  ID = tolower(state.abb),
+  abbr = state.abb,
+  name = tolower(state.name)
+)
+
+merged_data <- merge(merged_data, state_abbreviations, by.x = "ID", by.y = "name", all.X = TRUE)
+```
+
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Plot the map
+ggplot(data = world) +
+        geom_sf(data = merged_data, aes(fill = Total_Purchase_Amount_USD)) +
+        scale_fill_viridis_c(option = "D", na.value = "grey50", 
+                         name = "Total Purchase") +
+        geom_text(data = merged_data, aes(X, Y, label = abbr), size = 2, color = "black") +
+        coord_sf(xlim = c(-126.67, -64.95), ylim = c(23.84, 51.38), 
+             expand = FALSE) +
+        theme_bw() +
+        labs(title = "Total Purchase Amount by State") +
+        theme(legend.position = "bottom") +
+        guides(fill = guide_colorbar(barwidth = 10))
+```
+
+
+#### 2.1.1 Who/What/When/How
+
+**Who is the audience or audiences? **
+
+* Economists: Experts who analyze economic data to understand and predict market trends
+
+* Business Professionals: Individuals in the corporate sector interested in understanding regional market performance to strategize business growth such as business stakeholders and marketing teams
+
+* People who are interested in the geographical distribution of the total spending on shopping, across states
+
+
+**What is the action the visualization is aiming for? **
+
+* Realize that the West Coast of the United States has some states that belong to the highest group in total purchase amount for fashion
+
+* Understand which states or regions have high total purchase amounts to promote marketing strategies or distribute the goods properly
+
+* Act to research and improve strategies where the total purchase amount is low
+
+
+**When can the communication happen, and what tools have been used to suggest an order? **
+
+* All information is given at once in a static image
+
+* The position and the size of the legend suggest it should be read first, or at least, at the same time as the map
+
+* The colour and the name of the state should be read at the same time
+
+
+**How has data been used to convey the action? **
+
+* A map of the United States is presented in shades of Viridis, where each state is shaded according to its total purchase amount
+
+* The legend provides "Total Purchase" in continuous intervals that range from under 3500$ to over 5500$ 
+
+* The colour code used is Viridis - dark for the lower total purchase, light for the higher total purchase
+
+* The abbreviation names of states are also annotated at the central location of the state
+
+
+
+#### 2.1.2 Plot type and pre-attentive attributes
+
+This type of map (Choropleth) is effective for displaying geographically distributed data. It uses colour to represent data values across different regions, making it suitable for showing variations in total purchase amounts by state. The use of the Vidiris gradient quickly conveys the total purchase amount across states. States with higher or lower purchases stand out immediately due to their brighter or darker contrast.  
+
+
+#### 2.1.3 Support the main message
+
+From what could attract us when look on the map that the region belong to the West and North West of the United States includes California, Nevada, Idaho, and Montana has the brightest color in the entire United States. This suggests that these states have a strong customer base and high amount of purchasing power. Establishing a flagship store in this region could therefore allow the brand to tap into these active markets, potentially leading to high sales volumes and brand visibility. However, other factors such as competition, cost of operations, and brand fit should also be considered for a comprehensive decision.
+
+
+### 2.2 Second Visualization: Heat map illustrate the Average purchase amount by Purchase frequency and Payment method
+
+```{r}
+# Filter data
+purchase_by_freq_and_payment <- aggregate(Purchase.Amount..USD. ~ Frequency.of.Purchases + Payment.Method, data = data, FUN = mean)
+colnames(purchase_by_freq_and_payment) <- c("Frequency_of_Purchases", "Payment_Method", "Average_Purchase_Amount_USD")
+
+freq_order <- c("Bi-Weekly", "Weekly", "Fortnightly", "Monthly", "Every 3 Months", "Quarterly", "Annually")
+```
+
+
+
+```{r}
+# Plot heat map
+ggplot(purchase_by_freq_and_payment, aes(x = factor(Frequency_of_Purchases, levels = freq_order), y = Payment_Method, fill = Average_Purchase_Amount_USD)) +
+    geom_tile() +
+    scale_fill_viridis_c(name = "Average Purchase (USD)") +
+    theme_minimal() +
+    labs(title = "Average Purchase Amount by Purchase Frequency and Payment Method",
+         x = "Frequency of Purchases",
+         y = "Payment Method") +
+    theme(legend.position = "bottom")
+```
+
+
+#### 2.2.1 Who/What/When/How
+
+**Who is the audience or audiences?**
+
+* The individuals or professionals who are interested in analyzing customer behaviour, particularly in the  relationship between payment method and purchase frequency
+
+* Marketing strategists who do the marketing campaigns to target customer groups
+
+* Financial Analysts who could analyze to forecast future spending, and identify trends,... 
+
+
+**What is the action the visualization aiming for?**
+
+* Realize and agree that with the lower shopping frequency, the customers look like spend more 
+
+* Realize that the customers who use Venmo and Credit Card to pay often have higher purchase
+
+* Help in creating targeted marketing campaigns based on customer behaviour 
+
+* Understand the potential payment method and shopping behaviour to have attractive incentive programs to attract customers
+
+
+**When can the communication happen, and what tools have been used to suggest an order?**
+
+* All information is given at once in a static image
+
+* The position of the legend suggests that it should be read first
+
+* The colour of the block should be read at the same time as the payment method and purchase frequency they belong with
+
+**How has the data been used to convey the action?**
+
+* A heat map has been used to convey the action
+
+* Color coding: The use of a colour gradient from light yellow to dark purple effectively highlights the average purchase amount, where the darker indicates a lower amount and the lighter indicates a higher amount
+
+* Categorization: This allows viewers to identify which combination they are interested in quickly
+
+
+
+#### 2.2.2 Plot type and pre-attentive attributes
+
+The heat map is ideal for displaying the relationship between two categorical variables (Payment Method and Purchase Frequency), and a continuous variable (Average purchase amount). It allows for easy comparison across multiple categories and highlights the pattern. The use of the Viridis gradient helps quickly identify areas with higher and lower average purchase amounts. 
+
+#### 2.2.3 Support the main message
+
+The heatmap shows that customers who often pay by Venmo and Credit Card usually have higher average purchase amounts base on the color contrast. This suggests that these customers are already engaged and might respond positively to targeted marketing campaigns, potentially boosting sales. On the other hand, regular customers who pay by Bank Transfer and PayPal show lower average purchase amounts. This indicates a potential opportunity for growth. By applying new marketing strategies, it might be possible to increase their engagement and average purchase amounts.
+
+
+
+### 2.3 Third Visualization: Bar plot shows Purchase amount by Category
+
+```{r}
+# Filter data
+purchase_by_category <- aggregate(Purchase.Amount..USD. ~ Category, data = data, FUN = sum)
+colnames(purchase_by_category) <- c("Category", "Total_Purchase_Amount_USD")
+```
+
+
+
+```{r}
+# Plot bar chart
+ggplot(purchase_by_category, aes(x = reorder(Category, Total_Purchase_Amount_USD), y = Total_Purchase_Amount_USD, fill = Category)) +
+  geom_bar(stat = "identity") +
+  scale_fill_viridis_d() +
+  coord_flip() +
+  theme_bw() +
+  labs(title = "Total Purchase Amount by Category",
+       x = "Category",
+       y = "Total Purchase Amount (USD)",
+       fill = "Category")
+```
+
+
+#### 2.3.1 Who/What/When/How
+
+**Who is the audience or audiences?**
+
+* The individuals who are interested in the distribution of Fashion products such as Fashionista or Designer
+
+* Sales teams who use sales data to improve performance or strategies
+
+* Retail Managers or Market analysis team who oversee the categories and have to understand the fashion trends
+
+
+**What is the action the visualization is aiming for?**
+
+* Realize and Agree that Clothing holds the largest market share, while Outerwear holds the smallest
+
+* Understand the trending products to improve the business performance by importing the product to meet market demand
+
+* Understand the products that have lower sales to improve the marketing strategies
+
+
+**When can the communication happen, and what tools have been used to suggest an order?**
+
+* All information is given at once in a static image
+
+* Color has been used to differentiate between four Fashion categories which include Clothing, Accessories, Footwear, and Outerwear. Suggesting that should be read first and compared to each other
+
+* The plot should be read first, and then the total purchase amount corresponding to each category should be read later
+
+
+**How has the data been used to convey action?**
+
+* A bar plot shows the Total purchase amount of four Fashion categories Clothing, Accessories, Footwear, and Outerwear
+
+* The x-axis shows the total purchase amount in USD, while the y-axis shows the category
+
+
+#### 2.3.2 Plot type and Pre-attentive attributes
+
+The bar chart is one of the most effective ways to compare continuous values across different categories. It provides a clear visual comparison of total purchase amounts for different product categories. The length of each bar corresponds to the total purchase amount, making it easy to compare categories alternatively. Different colours are used for each category to distinguish them easily and maintain visual clarity. A horizontal bar chart helps in better readability and clear comparison between categories.
+
+#### 2.3.2 Support the main message
+
+From what we can see from the bar chart, the total purchase amount of Clothing and Accessories accounts for around 80% of the total purchase of fashion products. It shows that the customers are interested in these categories of products which could play a significant role in occupying the market. The developing product department can design trendy and high-fashioned products in Clothing and Accessories to attract customers.
+
+
+
+## 3. Roadblocks in the visualization process
+
+During the visualization process, several significant roadblocks were encountered that included data aggregation and transformation, effective use of colour and pre-attentive attributes, ... However, the main roadblock that I met to serve effective communication to my intended audience was choosing the appropriate plot type. My mission was to choose the complex visualization and convey the message to the audience, that was a challenging mission when I had to consider which pattern of data is suitable for each visualization. After trying to apply different plot types and iterative to find the best fit for the data subset, I finally chose the plot types that could convey my message and satisfy the requirement about the complexity. The reason why it was critical to overcome this is the right plot type was essential for clear and effective communication, while the wrong type could reduce the impact of data. Other than that simplified visualization ensured that the audience remained engaged and easily grasped the key message.
+
+
+## 4. Recommendations
+
+While the current visualizations provide valuable insights, there are additional recommendations that I would like to implement but did not have the space and skill set to apply. There are implemented interactive visualization and customer behaviour changing over time. 
+
+Firstly, applying the interaction to the Choropleth Map in the first visualization could help to convey more effective messages to the audience. The current visualization just provides information about the total purchase across states. Instead, we could make the visualization have a clickable state that could provide information about the average review rating, the proportion of purchases made by customers as subscriptions, the comparison between product categories, or the most popular product in the state. That could help the foreign fashion enterprises who are the intended audience of this report understand more about the market capability and customer behaviour to help them make better decision-making about the strategy and market penetration. 
+
+Secondly, with the limitation in resources, the data does not have information about purchase time so the visualizations can not analyse how the customer behaviour changes over time. The reason why this can convey more effective messages to the intended audience is that within a certain period, the customer's demand could change significantly. Because of this, the visualizations convey the message about the trending products or customer behaviour that could make the fashion company misunderstand the market they targeted. The visualization contains information about data changing over time could help them to predict the trending products and understand how customer behaviour changes over time to apply suitable marketing campaigns or develop products that match the customers' tastes. For instance, I could create a line plot with multiple line charts representing the total purchase amount of product categories changing over time instead of a bar plot. That could help the developing product team understand and predict which categories are trending and could generate revenue for the company.
+
+
+
+
+
+
+
+
+
+

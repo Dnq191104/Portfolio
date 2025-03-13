@@ -1,0 +1,769 @@
+---
+title: "Portfolio_MXB262"
+author: "Stephen Dang"
+date: "2024-05-09"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+Loading library
+```{r}
+library(ggplot2)
+library(dplyr)
+library(magrittr)
+library(covdata)
+library(tidytuesdayR)
+library(tidyr)
+library(ggalluvial)
+library(tibble)
+library(igraph)
+library(network)
+library(rnaturalearth)
+library(sf)
+library(ggrepel)
+library(viridis)
+library(raster)
+```
+
+
+## Week 3
+### Question 1 
+![](https://preview.redd.it/in-less-than-a-decade-peru-has-become-the-worlds-second-v0-lmqft82lk82d1.png?auto=webp&s=42e881c44b9eee2f0e69917f2fcffee130bdd90f)
+
+The URL: https://www.reddit.com/r/dataisbeautiful/comments/1cz2xbl/oc_in_less_than_a_decade_peru_has_become_the/
+
+Storyboard
+
+##### A. Describing the context
+
+**Who is the audience or audiences?:  **  
+
+* People who are interested in blueberries, either as a food or as a business opportunity. 
+* People who are interested in Peru or international trade.
+
+
+
+**What is the action the visualisation is aiming for? Consider each audience here:**      
+
+* Learn about the booming blueberry industry, particularly Peru's rapid growth
+* Recognize that Peru plays a critical role in the global Blueberry market
+* Realize the success of Peru in a particular agiculture product like Blueberry
+
+
+**When can the communication happen, and what tools have been used to suggest an order:**    
+
+* All information is given at once in a static image
+* Color has been used to differentiate between top four countries are largest blueberry producer which include The US, Peru, Canada, Chile. Suggesting that should be read at the same time and compare to each other
+* The plot should be read first, then the Blueberry quantity of each year correspond to each countries should be read later
+
+ 
+
+**How has the data been used to convey the action?:**   
+
+* The time series line plot represent the Blueberry quantity of four countries throughout the period.
+* The x axis show the time, when the y axis show the Blueberry quantity
+
+##### B. Genre   
+
+**Which of the seven genres listed above best dsecribes the data visualisation?** 
+
+* Annotated chart
+
+##### C. Author-driven vs Reader-driven
+
+**Where on the spectrum from author- to reader-driven is this visualisation?** 
+
+* Reader driven
+* The information should be read from left to right
+
+
+
+
+
+### Question 2
+
+#### 2.a What is the main argument of the paper
+This paper's major contention is that, in order to close the gap between industrial practice and research in sustainability decision-making, effective visual communication of quantitative sustainability performance information is crucial.
+
+
+#### 2.b According to this paper, why is effective visual communication important (or not)?
+
+Effective visual communication is important because:
+
+* It makes complex sustainability data easier to analyse and comprehend, especially for non-experts like students and marketing/finance professionals.
+
+* Since decision-makers frequently lack experience reading sustainability assessment data, it might be helpful to have clear visualisation frameworks to help make sense of the data and make better judgements about design and production.
+
+
+#### 2.c What are the key elements, considerations, or factors to be considered for effective visual communication addressed in the papers? Do you agree with any?
+
+The key elements include:
+
+* Tailoring visualization approaches to different target audiences
+
+* Identifying well-accepted and well-understood formats for visualizing results
+
+* Avoid complex bar charts and tabular representations, and address uncertainties in a way that easy to understand
+
+The first and the second considerations are generally agreeable. However, I slightly disagree with the last key element that complex data may sometimes require more detailed visualizations, and avoiding certain representations may limit the depth of analysis
+
+
+#### 2.d What pitfalls are identified in the paper that can be avoided if we use effective visual communication
+
+The pitfalls are identified in the paper:
+
+* The misinterpretation of data by non-experts
+
+* The failure to effectively integrate research outcomes into industry practice
+
+* The limited commercial application of visualization tools
+
+The effective visual communication can help overcome these pitfalls by enhancing the usability and accessibility of sustainability assessment results, leading to informed decision-making and bridging the gap between research and practice
+
+
+
+
+## Week 4
+
+### Question 3 
+```{r}
+ggplot(data = trees, aes(x = Girth, y =Height))+
+   geom_point( size = 2, color = "darkgreen") +
+   labs(title = "The relationship between Girth and Height of the Black Cherry Trees")+
+   theme_bw() +
+   theme(plot.title = element_text(size = 13))
+```
+
+* I choose the data set called 'trees' from packages 'datasets'. This data set provides measurements of the diameter, height and volume of timber in 31 felled black cherry trees. The reason I chose this data set is it can show us the variation of tree heights and the relationship between tree height and tree girth.
+
+* My choice of plot type is Scatter Plot, which is appropriate for visualizing the correlation between two continuous variables (Height and Grith)
+
+* I choose Height and Girth to show how the Girth of trees affect their Height. These variables are relevant because they can provide insights into the growth patterns of Black Cherry Trees.
+
+Aesthetic choice:
+
+* I use the 'Height' variable as the y-axis, representing the height of the trees.
+
+* I use the 'Girth" variable as the x-axis, representing the girth of the trees.
+
+* I use the dark green filled circle for each point in this plot and the black-white theme which makes the plot simple and easy to read.
+
+* The reason I used dark green colour which related to the trees and has high contrast with the background
+
+These aesthetic choices make the figure an effective communication tool by presenting the data clearly and without distraction, allowing viewers to focus on interpreting the relationship between tree girth and height.
+
+
+### Question 4
+
+```{r}
+apple_countries <- apple_mobility %>%
+        filter(country %in% c('Vietnam', 'Australia', 'United States', 'Japan')) %>%
+        group_by(country) %>%
+        summarise(mean_score = mean(score, na.rm = TRUE))
+
+ggplot(apple_countries, aes(y = mean_score, x = country)) +
+        geom_bar(stat = 'identity', fill = 'darkblue') + 
+        geom_text(aes(label=round(mean_score, 2)), vjust=1.6, color="white", size=3.5)+
+        ggtitle("The mobility of four countries: Australia, Japan, The US, Vietnam") +
+        labs(y = 'Mobility Score', x = '') +
+        theme_bw()
+
+```
+
+* A bar plot is used to compare the mobility of 4 countries. There are 1 continuous variable and 1 categorical variable so the bar plot effectively compares Mobility Scores across countries. 
+
+* My idea for this visualization is to compare the Mobility score between 4 countries: Australia, Japan, The US, and Vietnam
+
+* I calculate the mean mobility score for each country and use that as the Mobility Score. 
+
+Aesthetic choices:
+
+* Dark blue fill: Creates a visually appealing chart while maintaining readability.
+
+* Them black-white: Offers a classic and professional look.
+
+* The number inside the bar shows the average score of each country.
+
+* The x-axis shows the Countries while the y-axis shows the Mobility Score
+
+* Labeling each bar with its respective score allows for quick readability without needing to cross-reference with an axis scale.
+
+These aesthetic choices make the figure an effective communication tool by using a clear visual representation through a bar chart format which facilitates immediate comparison and understanding of where each country stands relative to others in terms of mobility score.
+
+
+
+### Question 5
+The data set I use for this question is "airquality"
+
+
+```{r}
+airquality_date <- airquality %>%
+        mutate(Date = as.Date(paste(1973, Month, Day, sep = "-")))
+
+ggplot(airquality_date, aes(x = Date, y = Temp)) +
+    geom_line(color = "darkblue") +
+    ggtitle("The temperature of New York from May to September 1973")+
+    labs(y = "Temperature") +
+    ylim(40, 110)+
+    theme_bw()
+
+```
+
+* This visualization is a line plot which useful to show the trend changing over time of the temperature in New York from May to September in 1973
+
+* The x axis is set as Date, while the y axis is set to Temperature
+
+* An audience can explore several things from this plot, including:
+
+   ** Daily temperature variations throughout May to September 1973 in New York
+   
+   ** General trends, the Summer period from June to August have higher temperature
+   
+   ** Potential high and low temperatures for the time frame
+
+Aesthetic choice:
+
+* Dark blue line: stands out well against the white background, making the trend easy to follow
+
+* Black and white theme: keeps the chart simple and avoids introducing additional colors that might not be necessary to understand the data
+
+* Clear title and axis labels: immediately informs the audience what the visualization is about and what data is being presented on each axis
+
+
+
+
+```{r}
+airquality$Month <- factor(airquality$Month, labels = c("May", "Jun", "Jul", "Aug", "Sep"))
+
+ggplot(airquality, aes(x = Month, y = Ozone)) +
+      geom_boxplot(color = 'darkorange4')+
+      ggtitle("How was the New York Ozone layer from May to Sep in 1973") +
+      labs(y = "Ozone score") +
+      theme_bw()
+
+```
+
+* The choice of a box plot is a good way to visualize the 2D data, which is Discrete X (Month), Continuous Y (Ozone Score) and it effectively display several aspects of the data at once
+
+* By examining these elements, the audience can gain the following insights:
+
+   ** Month-to-month variation in Ozone level: The median line shows the central tendency for each month, allowing for comparison between months. From what we can see, in July and August, the Ozone levels are higher than the other months
+   
+   ** Distribution of ozone levels within each month: The box indicates the spread of data points within a month. A wider box suggests more variation, while a narrower box indicates that the ozone levels were more consistent that month
+   
+   ** Potential outliers: Data points beyond the whiskers may be considered outliers and could indicate unusual ozone levels on specific days
+   
+The aesthetic choices:
+
+* The dark orange box: stands out well against the white background, making it easy to see the box plots
+
+* The black white theme: Avoid unnecessary elements and offer professional look
+
+
+
+
+
+## Week 6
+
+### Question 6
+
+First plot
+
+```{r}
+gender_pay_gap <- read.csv(
+     "https://raw.githubusercontent.com/plotly/datasets/master/school_earnings.csv")
+
+ggplot(gender_pay_gap, aes(x = Men, y = Women, size = Gap, label = School)) +
+   geom_point(alpha = 0.7, color = "lightblue") +
+   scale_size(range = c(1, 18), name="Gap") +
+   theme_bw() +
+   theme(legend.position="right", plot.title = element_text(size = 15)) +
+   labs(title = "The difference between Men and Women's salaries in the U.S. University", x = "Men's Salary", y = "Women's Salary") +
+   geom_text(aes(label = School), size = 2, color = 'black')
+```
+   
+
+
+Second plot
+
+```{r}
+gender_pay_gap_sum <- mutate(gender_pay_gap, Mean = (Men + Women)/2)
+ggplot(gender_pay_gap_sum, aes(x = Men, y = Women, size = Gap, color = Mean, label = School)) +
+   geom_point(alpha = 0.7) +
+   scale_size(range = c(2, 20), name="Pay Gap") +
+   scale_color_gradient(low = "blue", high = "red", name = "Average salary") +
+   theme_bw() +
+   theme(legend.position="right", plot.title = element_text(size =  12)) +
+   geom_text(aes(label = School), size = 2, color = 'black') +
+   labs(x = "Men's Salary", y = "Women's Salary") +
+   ggtitle("The difference between Men and Women's salaries in the U.S. University")
+```
+
+
+#### 6.1 
+The first observation a reader is likely to make from the plot is that there is the colour of the bubble which means the average salary of staff whether men or women in these universities
+
+#### 6.2 
+The preattentive attributes I have chosen in the first plot are position and size. The position shows the Men and Women's Salaries, while the size means the gender gap in pay. I matched the size of the bubble with the pay gap because it easily identifies and compares between universities, which also effectively illustrates the difference between Men and Women's Salaries. The x-axis represents the Men Salaries, while the y-axis represents Women's Salaries, which helps to compare the earnings between university
+
+#### 6.3 
+First Plot: This visualization might be useful for individuals who are interested in which university has the largest pay gap, also the difference between salaries. This might be the general public, the Higher Education Worker consider these universities, students of these universities, and people who are interested in gender equality
+
+Second Plot: This visualization includes the additional preattentive attribute colour, which makes this plot useful for someone familiar with data visualization. This could include policymakers, researchers, and students who research about gender pay gap
+
+
+
+### Question 7
+```{r}
+ggplot(CO2, aes(x = conc, y = uptake)) +
+   geom_line() +
+   geom_point() +
+   facet_wrap(~Plant) +
+   labs(x = "CO2 Concentration", y = "CO2 Uptake") +
+   theme(plot.title = element_text(size = 30)) +
+   ggtitle("The relationship between CO2 uptake and CO2 concentration for each type of Plant") +
+   theme_bw()
+```
+
+#### 7.1 
+The first observation that the reader makes from the plot might be the changing of the line between plots which shows the relationship between CO2 uptake and concentration for each plant
+
+#### 7.2 
+Here's why faceting is an effective way to visualize this data:
+* Plant plays a role as a categorical variable, which splits data into several groups. Faceting allows us to show each group in its panel, making it easier to see the relationship between CO2 Concentration and Uptake for each plant type
+* Faceting allows us to compare the trends between different plant type 
+
+#### 7.3
+If I can not choose a faceting plot for this data, I will select the line plot with multiple lines, where each line represents a different plant type with different colours. This plot is better for comparison between types by type, but with 12 types of plans for this data, the plot might be cluttered.
+
+
+
+### Question 8
+
+```{r}
+tuesdata <- tidytuesdayR::tt_load(2021, week = 15)
+
+soybean <- tuesdata$soybean_use
+soybean_1 <- soybean %>% 
+   filter(year == 2000, entity %in% c("Africa", "Americas", "Asia", "Oceania", "Europe"))
+
+soybean_1 <- subset(soybean_1, select = -code)
+
+soybean_2 <- soybean_1 %>%
+  pivot_longer(cols = -c(entity, year), names_to = "usage", values_to = "amount")
+
+soybean_2$custom_labels <- ifelse(soybean_2$usage == "human_food", "Human Food",
+                             ifelse(soybean_2$usage == "animal_feed", "Animal Feed", "Processed"))
+
+ggplot(soybean_2, aes(x = entity, y = custom_labels, fill = sqrt(amount))) +
+   geom_tile(color = "white") +
+   scale_fill_gradient(low = "white", high = "darkblue", name = "Amount") +
+   labs(title = "Soybean Usage by Continent in 2000",
+       x = "Continent",
+       y = "Category") +
+   theme_minimal() +
+   theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
+
+
+```
+
+
+
+#### 8.1
+
+The first observation a reader might make from the heat map is the amount of soybean usage for processed products in America because it has the darkest colour which means it is where most soybean is used
+
+#### 8.2
+
+The heat map is an effective visualization it provides a clear, immediate comparison of data through colour gradients, representing different usage levels without the need for exact figures. This visualization helps in quickly identifying patterns, such as which continent uses more soybeans for ‘Human Food’ versus ‘Animal Feed’. It’s a quick reference tool that doesn’t require reading and interpreting numbers, which can be time-consuming and less intuitive.
+
+#### 8.3 
+
+While the heat map provides a good overview, it might lack precise numerical data. An alternative visualization could be a clustered bar chart. This would show each continent’s soybean usage in different bars next to each other, making it easier to compare exact figures across categories.
+
+
+### Question 9
+
+```{r}
+
+season_summary <- survivoR::season_summary
+
+season_summary <- season_summary %>%
+   dplyr::select(version_season, viewers_mean, country) %>%
+   drop_na() %>%
+   filter(version_season != "AU01", version_season != "AU02")
+
+ggplot(season_summary, 
+       aes(axis1 = version_season, axis2 = country, y = viewers_mean)) +
+   geom_alluvium(aes(fill = country), width = 0.1, curve_type = "quintic") +
+   geom_stratum(width = 0.2) +
+   geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 2) +
+   scale_x_discrete(limits = c("Version/Season", "Country"), expand = c(0.05, 0.05)) +
+   ggtitle("TV Show Viewership by Season and the Filming location") +
+   ylab("Viewers mean") +
+   theme_bw()
+   
+```
+
+
+#### 9.1 
+The first observation a reader might make is Fuji is the filming location where most seasons were filmed and also got the highest total mean viewers based on the thickness of the bands. The width of the bands intuitively shows which seasons are more popular and which locations are associated with higher viewership.
+
+#### 9.2
+An alluvial diagram is effective for visualizing this data because it:
+
+* Highlight the connection between seasons and locations through colour
+
+* Illustrate the flow of viewership volume (the width of bands)
+
+* Allow for easy comparison of the relative popularity of different seasons and locations 
+
+#### 9.3
+Another visualization option could be a stacked bar chart, where each bar represents a Filming location and the segments within the bar show the viewership contribution from different seasons. This would facilitate a direct comparison between filming locations and seasons within filming locations. This plot type is particularly useful to show the total viewership by filming location while also breaking down the contribution from each season.
+
+
+### Question 10
+
+#### 10.1
+
+```{r}
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyDirectedWeighted.csv", header=TRUE)
+
+# short names
+colnames(data) <- c("Africa", "EAsia", "Europe", "LatinAm.",   "NorthAm.",   "Oceania", "SAsia", "SEAsia", "Sov.Un.", "WAsia")
+rownames(data) <- colnames(data)
+
+# The data is in the form of an adjacency matrix, but we need it in a three column matrix instead: first column origin, second column destination, third column flow. We will use simple re-shaping commands for this:
+data_long <- gather(rownames_to_column(data), key='key', value='value', -rowname)
+
+ggplot(data_long,
+       aes(axis1 = rowname, axis2 = key, y = value)) +
+   geom_alluvium(aes(fill = rowname), width = 0.1, curve_type = "quintic") +
+   geom_stratum(width = 0.2) +
+   geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 3) +
+   scale_x_discrete(limits = c("From", "To"), expand = c(0.05, 0.05)) +
+   ggtitle("The number of people migrating from one region to each others") +
+   theme_bw()
+   
+
+```
+
+
+#### 10.2
+
+* The target audience for the chord diagrams is the analysts and researchers who can understand complicated visualization, while the alluvial focus is more on the general audience
+
+* While the chord diagram shows the interconnectedness of regions, the alluvial plot can highlight the directionality and volume of migration more sequentially
+
+#### 10.3
+
+Aesthetic choices like colour gradients, flow thickness, and clear labelling in the alluvial plot can enhance understanding by emphasizing significant migration trends and patterns, making the data more accessible and easier to interpret within the given context. These choices help communicate the complexity of migration in a structured and comprehensible manner.
+
+#### 10.4
+
+Similar to an alluvial plot, a Sankey diagram visualizes the flow of quantities between different states or categories. However, it does so with a focus on the conservation of a quantity, often represented as the width of the links or arrows, which correspond to the flow rate.
+
+The Sankey diagram could be more effective than the alluvial plot in the following ways:
+
+* Clarity in Flow Direction: The directional arrows in a Sankey diagram make the direction of flows more explicit, which can be particularly helpful in understanding complex networks.
+
+* Conservation of Quantity: It emphasizes the conservation of the flow quantity throughout the system, which can be crucial for interpreting migration data where the number of migrants is a conserved quantity.
+
+* Space Efficiency: Sankey diagrams can be more space-efficient, as they allow for overlapping paths without loss of clarity, which is beneficial when dealing with a large number of categories or flows.
+
+
+#### 10.5
+
+Another visualization that can communicate the same message, which includes additional information is a network diagram, the additional data here is the countries. Each vertex represents a country in the world, while the width of the edge represents the volume of immigration. The vertex represents a country in the same region and should be the same colour. 
+
+ If the goal is to focus solely on the volume and direction of migration flows, an alluvial plot might be more effective due to its simplicity and clear representation of data. However, if the audience requires a comprehensive understanding that includes which countries the immigrations come from, then the alluvial plot might be less effective compared to the network diagram.
+
+### Question 11
+
+```{r}
+attr1 <- read.csv("W7/data/Farms/attr_farms.csv", stringsAsFactors = F) #load the edgelist_farms.Rdata
+edges <- read.csv("W7/data/Farms/Edgelist_farms.csv", stringsAsFactors = F) #load attr.farms.Rdata
+
+net_edges <- graph_from_data_frame(edges,directed=T)
+
+# Map the farm type and size attributes to the vertices
+V(net_edges)$type <- as.character(attr1$type[match(V(net_edges)$name, attr1$farm.id)])
+V(net_edges)$farm.size <- attr1$size[match(V(net_edges)$name, attr1$farm.id)]
+
+# Set vertex colors based on farm type
+V(net_edges)$color <- V(net_edges)$type
+V(net_edges)$color <- gsub("Fattening", "steelblue1", V(net_edges)$color)
+V(net_edges)$color <- gsub("Dairy", "darkgoldenrod1", V(net_edges)$color)
+V(net_edges)$color <- gsub("Small farm", "mediumpurple", V(net_edges)$color)
+V(net_edges)$color <- gsub("Breeding", "navy", V(net_edges)$color)
+V(net_edges)$color <- gsub("Complete cycle", "magenta2", V(net_edges)$color)
+V(net_edges)$color <- gsub("Growing", "green4", V(net_edges)$color)
+
+
+# Scale vertex sizes based on farm size
+vertex_sizes <- V(net_edges)$farm.size / max(V(net_edges)$farm.size, na.rm = TRUE) * 25
+
+plot.igraph(simplify(net_edges),
+    layout= layout.kamada.kawai,
+    vertex.label=NA,
+    vertex.color=V(net_edges)$color,
+    vertex.size= vertex_sizes,
+    edge.arrow.size=.2,
+    edge.color = "gray60",
+    main = "Farm Network Visualization")
+
+
+legend("bottomleft",
+    legend=c("Breeding","Growing","Complete cycle","Fattening","Dairy","Small farm"),
+    col=c("navy","green4","magenta2","steelblue1","darkgoldenrod1","mediumpurple"),
+    pch=19,cex=1,bty="n")
+```
+
+#### 11.2
+From what I can see, the largest farm are located in the central of the map. The lager farms, particularly those involved in fattening and dairy, are more centrally located within the network. This central placement suggests they play a critical role in the network's functionality
+
+#### 11.3
+The visualization communicates the interconnectedness and relative sizes of different farm types within an agricultural network. It is likely intended for stakeholders in the agricultural sector, such as farmers, researchers, and policymakers, who need to understand the dynamics of farm interactions.
+
+#### 11.4
+The aesthetic choices, such as color-coding and size differentiation, make it easier for the audience to quickly grasp the structure and scale of the network. These visual cues help in communicating complex information in a simplified manner, aiding in better decision-making and analysis within the agricultural context.
+
+#### 11.5 
+Another visualization could be use here is chord diagram. Chord diagrams excel at showing how different farm types (breeding, growing, etc.) interact and depend on each other. The thickness of the connecting ribbons between farm types reflects the volume of exchange. However, Chord diagrams primarily focus on the relationships between farm types. They don't inherently show the size of farms. 
+
+
+### Question 12
+
+First visualization
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+world_points<- st_centroid(world)
+world_points <- cbind(world, st_coordinates(st_centroid(world$geometry)))
+
+ggplot(data = world) +
+   geom_sf(color = "black", aes(fill = gdp_md)) +
+   scale_fill_viridis_c(option = "plasma", trans = "log", na.value = "grey50", name = "GDP (Millions $)") +
+   coord_sf(xlim = c(88.594382881345, 152.93774260658), ylim = c(-12.375471986864, 31.291864723093), expand = FALSE) +
+   geom_label(data = world_points, aes(x = X, y = Y, label = name),
+             color = "black", fontface = "bold", size = 2) +
+   labs(title = "GDP of Countries in Southeast Asia") +
+   theme_bw() +
+   theme(legend.position = "bottom",
+         plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+         plot.subtitle = element_text(hjust = 0.5, size = 12),
+         plot.caption = element_text(size = 8),
+         legend.title = element_text(size = 7),
+         legend.text = element_text(size = 5))
+
+```
+
+
+
+Second Visualization
+```{r}
+SEA_gdp_data <- world %>%
+   filter(subregion == "South-Eastern Asia")
+SEA_gdp_data <- data.frame(SEA_gdp_data$name, SEA_gdp_data$gdp_md)
+names(SEA_gdp_data) <- c("Country", "GDP")
+
+ggplot(SEA_gdp_data, aes(y = GDP, x = reorder(Country, GDP))) +
+   geom_bar(stat = "identity", aes(fill = GDP)) +
+   scale_fill_viridis_c(option = "plasma") +
+   coord_flip() + 
+   theme_bw() + 
+   xlab("Country") +
+   ggtitle("GDP by Country in Southeast Asia")
+
+
+```
+
+
+* First visualization: The target audience for this visualization is economic analysts or educators, and the intended message is to compare the GDP of Southeast Asian countries using a color-coded map for quick visual analysis.
+
+
+* Second plot: The target audience for the visualization is likely economists or policy analysts interested in the economic performance of Southeast Asian countries, with the intended message being a comparison of GDP by country in that region
+
+### Question 13 
+
+#### Part A
+
+```{r}
+locations  <- read.csv("whiskey_data/tas_locations.csv", stringsAsFactors = F)
+whiskey_tas <- read.csv("whiskey_data/whiskey_sales_tasmania.csv", stringsAsFactors = F)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+producer_count <- whiskey_tas %>%
+   group_by(producer) %>%
+   summarise(Producer = n()) %>%
+   rename(place = producer)
+
+consumer_count <- whiskey_tas %>%
+   group_by(consumer) %>%
+   summarise(Consumer = n()) %>%
+   rename(place = consumer)
+
+whiskey_count <- full_join(producer_count, consumer_count, by = "place")
+
+summary_tas <- locations %>%
+   left_join(whiskey_count, by = "place")
+
+summary_tas <- summary_tas %>%
+   pivot_longer(cols = c("Producer", "Consumer"), names_to = "type", values_to = "count")
+
+places_labels <- c("Smithton", "Launceston", "Longford", "Bridgewater", "Gagebrook", "Hobart", "Kingston")
+
+places <- locations %>%
+   filter(place %in% places_labels)
+
+places <- st_as_sf(places, coords = c("lon", "lat"),
+                   crs = 4326)
+places <- cbind(places, st_coordinates(st_transform(crs = 4326,st_centroid(st_transform(crs = 3857,places)))))
+
+ggplot(data = world) +
+   geom_sf() +
+   geom_point(data = summary_tas, aes(x = lon, y = lat, size = count, color = type)) +
+   geom_text_repel(data = places, aes(X, Y, label = place), color = "black", size = 3,
+                   nudge_y = 0.3, nudge_x = 0.2, segment.color = 'black')+
+   scale_color_manual(values = c("Producer" = "salmon", "Consumer" = "lightblue")) +
+   coord_sf(xlim = c(143, 151), ylim = c(-44, -38), expand = FALSE) +
+   theme_bw()
+```
+
+
+#### Part B
+```{r}
+ggplot(data = world) +
+    geom_sf() +
+    geom_point(data = summary_tas, aes(x = lon, y = lat, size = count, color = type), alpha = 0.6) +
+    geom_text_repel(data = places, aes(X, Y, label = place), color = "black", size = 3,
+                    nudge_y = 0.1, nudge_x = 0.1, box.padding = 0.4, segment.color = 'black')+
+    scale_color_manual(values = c("Producer" = "red", "Consumer" = "blue"), name = "Role") +
+    scale_size_continuous(name = "Size", range = c(2, 10)) +
+    coord_sf(xlim = c(144, 149), ylim = c(-44, -40), expand = FALSE) +
+    xlab("Longtitude") +
+    ylab("Latitude") +
+    ggtitle("Whiskey transportation in Tasmania in 1585") +
+    theme_bw()
+```
+
+
+* The target audience who is interested in trade patterns and historical commerce, specifically concerning whiskey in Tasmania, includes historians, researchers, and enthusiasts.
+
+* The map intends to illustrate the distribution and volume of whiskey transported by consumers and producers across various Tasmanian locations
+
+
+Improvement in the second plot:
+
+* Color Coding: The use of red for ‘Consumer’ and blue for ‘Producer’ is a clear visual distinction that helps viewers quickly differentiate between the two categories.
+
+* Labeling: The title shows the clear intended message for the reader, while the axis label avoids confusion when reading the visualization
+
+* Reduced clutter: This plot zooms into Tasmania's location, which can reduce the clutter and help the audience focus on the analysis
+
+
+
+#### Part C
+```{r}
+network_data <- whiskey_tas %>%
+   group_by(producer, consumer) %>%
+   summarise(size = n()) %>%
+   ungroup()
+
+net <- graph.data.frame(network_data, directed = T)
+
+E(net)$width <- sqrt(network_data$size)
+E(net)$arrow.mode <- 2
+V(net)$label.cex <- 0.5
+
+
+plot.igraph(net, 
+            layout = layout.kamada.kawai, 
+            edge.color = "dodgerblue",
+            vertex.color = "lightpink",
+            vertex.frame.color = "lightpink",
+            vertex.label.color = "black", 
+            vertex.size = 22,
+            edge.arrow.size = 1, 
+            main = "The transportation of whiskey between city in Tasmania") 
+```
+
+* This visualization is a network diagram with each vertex being a city and the arrows represent the whiskey's transportation between cities, where the head points to the consumer city. 
+
+The audience for this diagram might differ from the first map in several ways:
+
+* Focus on Logistics: The network diagram is likely intended for an audience interested in the logistics and transportation aspects of whiskey distribution, such as supply chain professionals or transport planners.
+
+* Analytical Approach: It may appeal to those who prefer analytical approaches to data, such as network analysts or operations researchers, who can use the connections between nodes to optimize routes or identify key distribution centres.
+
+
+### Question 14
+
+```{r}
+Euphorbia <- raster("invasive_plant_rasters_2019/sumrast_allassumptions.avg_Euphorbia esula.tif")
+
+   colE <- viridis(5)
+   brkE <- c(0, 0.2, 0.4, 0.6, 0.8, 1)
+   
+   plot(Euphorbia, col=colE, breaks=brkE,
+        main = "Distribution of Euphorbia esula") 
+
+
+
+```
+
+
+```{r}
+Cardamine <- raster("invasive_plant_rasters_2019/sumrast_allassumptions.avg_Cardamine impatiens.tif")
+
+colC <- viridis(10)
+brkC <- c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1)
+
+plot(Cardamine, col=colC, breaks=brkC, 
+     main = "Distribution of Cardamine impatiens")
+
+```
+
+
+
+* Color Palette: The viridis colour palette is known for being perceptually uniform, meaning it is easily interpretable by those with colour vision deficiencies. This choice ensures that the visualization is accessible to a wider audience.     
+* Numeric breaks: I use 6 breaks for the first visualization which has a larger distribution, while there are 11 breaks for the second visualization which has less distribution. The reason I do that is that it make that have enhanced detail and improves the accuracy of the visualization
+* Clear title: This will help the visualization easily convey the intended messages.
+
+
+
+
+
+### Question 15
+
+```{r}
+dfC <- as.data.frame(Cardamine, XY = TRUE)
+dfE <- as.data.frame(Euphorbia, XY = TRUE)
+
+colnames(dfC)[1] <- "presence"
+colnames(dfE)[1] <- "presence"
+
+dfC$species <- "Cardamine impatiens"
+dfE$species <- "Euphorbia esula"
+
+dfC <- dfC[!is.na(dfC$presence), ]
+dfE <- dfE[!is.na(dfE$presence), ]
+
+df <- rbind(dfC, dfE)
+
+ggplot(df, aes(x = species, y = presence, fill = species)) +
+   geom_boxplot() +
+   ggtitle("The distribution between Euphorbia esula and Cardamine impatiens") +
+   theme_bw()
+```
+
+
+
+Based on the data visualizations and maps, it’s clear that Euphorbia esula is more prevalent and widespread than Cardamine impatiens in Minnesota. The box plot shows a higher median presence and a larger interquartile range for Euphorbia esula, indicating a more variable and extensive distribution. Therefore, I strongly recommend prioritizing the control of Euphorbia esula to effectively mitigate its impact on our ecosystems.
+
+
+
+
+
